@@ -1,0 +1,5 @@
+requirements:
+  tx_per_second:
+    description: "Transactions per second including the time taken in order to establish connections"
+    expectedResult:
+      minimum: 8000

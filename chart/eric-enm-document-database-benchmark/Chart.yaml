@@ -1,0 +1,10 @@
+apiVersion: v2
+name: eric-enm-document-database-benchmark
+dependencies:
+  - condition: eric-data-document-database-pg.enabled
+    name: eric-data-document-database-pg
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm/
+    version: 8.21.0+24
+description: A Helm chart for Postgres benchmark
+type: application
+version: 1.1.0

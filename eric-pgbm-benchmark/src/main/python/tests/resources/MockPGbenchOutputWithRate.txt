@@ -1,0 +1,27 @@
+dropping old tables...
+creating tables...
+generating data...
+100000 of 2000000 tuples (5%) done (elapsed 0.07 s, remaining 1.37 s)
+200000 of 2000000 tuples (10%) done (elapsed 0.21 s, remaining 1.91 s)
+300000 of 2000000 tuples (15%) done (elapsed 0.32 s, remaining 1.80 s)
+400000 of 2000000 tuples (20%) done (elapsed 0.45 s, remaining 1.81 s)
+500000 of 2000000 tuples (25%) done (elapsed 0.55 s, remaining 1.66 s)
+600000 of 2000000 tuples (30%) done (elapsed 0.69 s, remaining 1.61 s)
+700000 of 2000000 tuples (35%) done (elapsed 0.84 s, remaining 1.56 s)
+800000 of 2000000 tuples (40%) done (elapsed 0.95 s, remaining 1.43 s)
+900000 of 2000000 tuples (45%) done (elapsed 1.08 s, remaining 1.33 s)
+1000000 of 2000000 tuples (50%) done (elapsed 1.18 s, remaining 1.18 s)
+1100000 of 2000000 tuples (55%) done (elapsed 1.35 s, remaining 1.11 s)
+1200000 of 2000000 tuples (60%) done (elapsed 1.50 s, remaining 1.00 s)
+1300000 of 2000000 tuples (65%) done (elapsed 1.61 s, remaining 0.87 s)
+1400000 of 2000000 tuples (70%) done (elapsed 1.78 s, remaining 0.76 s)
+1500000 of 2000000 tuples (75%) done (elapsed 1.94 s, remaining 0.65 s)
+1600000 of 2000000 tuples (80%) done (elapsed 2.06 s, remaining 0.51 s)
+1700000 of 2000000 tuples (85%) done (elapsed 2.16 s, remaining 0.38 s)
+1800000 of 2000000 tuples (90%) done (elapsed 2.33 s, remaining 0.26 s)
+1900000 of 2000000 tuples (95%) done (elapsed 2.44 s, remaining 0.13 s)
+2000000 of 2000000 tuples (100%) done (elapsed 2.60 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done.
+line b'transaction type: /var/tmp/test.sql\nscaling factor: 1\nquery mode: simple\nnumber of clients: 50\nnumber of threads: 4\nduration: 30 s\nnumber of transactions actually processed: 161662\nlatency average = 9.291 ms\nrate limit schedule lag: avg 11.320 (max 278.625) ms\ntps = 5381.265150 (including connections establishing)\ntps = 5382.258553 (excluding connections establishing)\n'

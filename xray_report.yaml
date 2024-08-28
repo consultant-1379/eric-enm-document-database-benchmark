@@ -1,0 +1,10 @@
+xray:
+  name: eric-enm-document-database-benchmark
+  version: "{version}"
+  pg-benchmark-image-name: "{pg-benchmark-image-name}"
+  results-image-name: "{results-image-name}"
+  eric-cniv-init-wait-image-name: "{eric-cniv-init-wait-image-name}"
+  paths:
+    - "ARM-SEKA/proj-enm-docker-global/proj-enm/{pg-benchmark-image-name}:{version}"
+    - "ARM-SEKA/proj-enm-docker-global/proj-enm/{results-image-name}:{version}"
+    - "ARM-SEKA/proj-enm-docker-global/proj-enm/{eric-cniv-init-wait-image-name}:{version}"

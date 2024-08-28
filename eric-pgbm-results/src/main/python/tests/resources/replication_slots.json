@@ -1,0 +1,47 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "matrix",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "pg_replication_slots_active",
+                    "app": "postgres",
+                    "endpoint": "metrics",
+                    "instance": "192.168.165.221:9187",
+                    "job": "postgres",
+                    "namespace": "enm11a21",
+                    "server": "postgres-0:5432",
+                    "service": "postgres",
+                    "slot_name": "postgres_1"
+                },
+                "values": [
+                    [
+                        1662564600.781,
+                        "1"
+                    ],
+                    [
+                        1662565200.781,
+                        "1"
+                    ],
+                    [
+                        1662565800.781,
+                        "0"
+                    ],
+                    [
+                        1662566400.781,
+                        "1"
+                    ],
+                    [
+                        1662567000.781,
+                        "1"
+                    ],
+                    [
+                        1662567600.781,
+                        "1"
+                    ]
+                ]
+            }
+        ]
+    }
+}

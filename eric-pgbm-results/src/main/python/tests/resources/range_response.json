@@ -1,0 +1,62 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "matrix",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "test_metric",
+                    "app": "postgres",
+                    "endpoint": "metrics",
+                    "instance": "192.168.165.221:9187",
+                    "job": "postgres",
+                    "namespace": "test_namespace",
+                    "server": "postgres-0:5432",
+                    "service": "postgres",
+                    "slot_name": "postgres_1"
+                },
+                "values": [
+                    [
+                        1662564600.781,
+                        "1"
+                    ],
+                    [
+                        1662565200.781,
+                        "2"
+                    ],
+                    [
+                        1662565800.781,
+                        "3"
+                    ]
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "test_metric",
+                    "app": "postgres",
+                    "endpoint": "metrics",
+                    "instance": "192.168.165.221:9187",
+                    "job": "postgres",
+                    "namespace": "test_namespace",
+                    "server": "postgres-1:5432",
+                    "service": "postgres",
+                    "slot_name": "postgres_1"
+                },
+                "values": [
+                    [
+                        1662566400.781,
+                        "4"
+                    ],
+                    [
+                        1662567000.781,
+                        "5"
+                    ],
+                    [
+                        1662567600.781,
+                        "6"
+                    ]
+                ]
+            }
+        ]
+    }
+}

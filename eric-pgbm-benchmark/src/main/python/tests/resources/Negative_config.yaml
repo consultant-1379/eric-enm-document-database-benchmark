@@ -1,0 +1,5 @@
+pgbench:
+  clients:
+  time:
+  threads:
+  scale_factor:

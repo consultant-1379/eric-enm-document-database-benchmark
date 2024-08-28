@@ -1,0 +1,1 @@
+Mock file, no metrics to be collected

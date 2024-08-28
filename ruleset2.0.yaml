@@ -1,0 +1,324 @@
+modelVersion: 2.0
+
+description: "ENM: CMService Service Group Pipeline"
+
+docker-images:
+  - adp-release-auto: armdocker.rnd.ericsson.se/sandbox/adp-staging/adp-cicd/bob-adp-release-auto:latest
+  - pgbm-ci-py37: armdocker.rnd.ericsson.se/proj_oss_releases/pgbm-ci-py37:1.11.0
+  - pgbm-ci-py311: armdocker.rnd.ericsson.se/proj_oss_releases/pgbm-ci-py311:1.8.0
+  - grype-scan: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/va-image-scanning-grype:latest
+  - trivy-inline-scan: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/trivy-inline-scan:latest
+  - va-scan-kubesec: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/va-scan-kubesec:latest
+  - va-scan-kubeaudit: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/va-scan-kubeaudit:latest
+  - adp-helm-dr-checker: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/adp-helm-dr-checker:latest
+  - adp-image-dr-check: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/adp-image-dr-check:latest
+
+import:
+  common: common-properties.yaml
+
+env:
+  - PWD
+  - RELEASE (default=true)
+  - HELM_REPO_USER (default=lciadm100)
+  - HELM_REPO_TOKEN (default=AKCp2WY1HSJFJs1KHqVYtnadmQFw7k3A7JtcW4E9zKXKBRskkM7ZnTUQCfr9FvCp3mFattM8K)
+  - BUILD_DATE (default = $(date -u +'%Y-%m-%dT%H:%M:%SZ'))
+  - GIT_COMMITTER_NAME
+  - GIT_COMMITTER_EMAIL
+  - ENABLE_HELM_V3 (default=true)
+
+var:
+  - work-dir
+  - version
+  - commithash
+  - image-repo
+  - image-path
+  - base-image-path
+  - results-image-path
+  - init-image-path
+  - cniv-init-image-path
+  - cbos-version
+  - helm-chart-repo
+  - va-report-arguments
+
+rules:
+  clean:
+    - task: rm
+      cmd:
+        - rm -rf .bob/
+        - rm -rf build/
+        - rm -rf pylint/
+        - rm -rf config/
+
+  set-working-directory:
+    - task: set-working-directory
+      cmd: pwd > .bob/var.work-dir
+
+  get-commit-hash:
+    - task: commit
+      docker-image: adp-release-auto
+      cmd:
+        - git rev-parse --short HEAD > .bob/var.commithash
+
+  prepare-snapshot-build:
+    - task: generate-version
+      docker-image: adp-release-auto
+      cmd: generate-version --is-release false --output version
+    - task: image-repopath
+      cmd: echo "${common.internal-image-repo}" > .bob/var.image-repo
+    - task: helm-chart-repopath
+      cmd: echo "${common.helm-chart-snapshot-repo}" > .bob/var.helm-chart-repo
+
+  prepare-release-build:
+    - task: generate-version
+      docker-image: adp-release-auto
+      cmd: generate-version --is-release true --output version
+    - task: image-repopath
+      cmd: echo "${common.image-repo}" > .bob/var.image-repo
+    - task: helm-chart-repopath
+      cmd: echo "${common.helm-chart-release-repo}" > .bob/var.helm-chart-repo
+
+  prepare-docker-image-paths:
+    - task: image-path
+      cmd: echo "${common.registry-url}/${var.image-repo}/${common.pg-benchmark-image-name}"  > .bob/var.image-path
+    - task: base-image-path
+      cmd: echo "${common.registry-url}/${var.image-repo}/${common.base-image-name}"  > .bob/var.base-image-path
+    - task: results-image-path
+      cmd: echo "${common.registry-url}/${var.image-repo}/${common.results-image-name}"  > .bob/var.results-image-path
+    - task: cniv-init-image-path
+      cmd: echo "${common.registry-url}/${var.image-repo}/${common.eric-cniv-init-wait-image-name}"  > .bob/var.cniv-init-image-path
+    - task: cbos-version
+      cmd: echo "${common.cbos-version}"  > .bob/var.cbos-version
+
+  build-and-push-base-image:
+    - task: docker-build
+      cmd: /bin/bash -c "cd ${var.work-dir}/eric-pgbm-base-image && docker build . --build-arg OS_BASE_IMAGE_TAG=${var.cbos-version} --build-arg BUILD_DATE=${env.BUILD_DATE} -t ${var.base-image-path}:${var.version}" --build-arg REVISION=${var.commithash} --build-arg IMAGE_VERSION=${var.version}
+
+    - task: docker-push
+      cmd: docker push ${var.base-image-path}:${var.version}
+
+  build-and-push-images:
+    - task: docker-build-pgbm
+      cmd: /bin/bash -c "cd ${var.work-dir}/eric-pgbm-benchmark && docker build .
+       --build-arg BASE_IMAGE_TAG=${var.version}
+       --build-arg BASE_IMAGE_REPO=${common.registry-url}/${var.image-repo}
+       --build-arg BUILD_DATE=${env.BUILD_DATE}
+       --build-arg REVISION=${var.commithash}
+       --build-arg IMAGE_VERSION=${var.version}
+       -t ${var.image-path}:${var.version}"
+
+    - task: docker-build-pgbm-results
+      cmd: /bin/bash -c "cd ${var.work-dir}/eric-pgbm-results && docker build .
+       --build-arg BASE_IMAGE_TAG=${var.version}
+       --build-arg BASE_IMAGE_REPO=${common.registry-url}/${var.image-repo}
+       --build-arg BUILD_DATE=${env.BUILD_DATE}
+       --build-arg REVISION=${var.commithash}
+       --build-arg IMAGE_VERSION=${var.version}
+       -t ${var.results-image-path}:${var.version}"
+
+    - task: docker-build-cniv-init-wait
+      cmd: /bin/bash -c "cd ${var.work-dir}/eric-cniv-init-wait && docker build .
+       --build-arg BASE_IMAGE_TAG=${var.version}
+       --build-arg BASE_IMAGE_REPO=${common.registry-url}/${var.image-repo}
+       --build-arg BUILD_DATE=${env.BUILD_DATE}
+       --build-arg REVISION=${var.commithash}
+       --build-arg IMAGE_VERSION=${var.version}
+       -t ${var.cniv-init-image-path}:${var.version}"
+
+    - task: docker-push
+      cmd:
+        - docker push ${var.image-path}:${var.version}
+        - docker push ${var.results-image-path}:${var.version}
+        - docker push ${var.cniv-init-image-path}:${var.version}
+
+  image-design-rule-checks:
+    - task: check-eric-pgbm-base-image
+      docker-image: adp-image-dr-check
+      docker-in-docker: socket
+      cmd: image-dr-check -i ${var.base-image-path}:${var.version}
+       --output .bob/image-drs/check-eric-pgbm-base-image/
+       -DimageDesignRule.config.${common.base-image-name}.DR-D470203-050=disable
+       -DimageDesignRule.config.${common.base-image-name}.DR-D470203-041=disable
+       -DimageDesignRule.config.${common.base-image-name}.DR-D1123-122=disable
+    - task: check-eric-pgbm-benchmark
+      docker-image: adp-image-dr-check
+      docker-in-docker: socket
+      cmd: image-dr-check -i ${var.image-path}:${var.version}
+       --output .bob/image-drs/check-eric-pgbm-benchmark/
+       -DimageDesignRule.config.${common.pg-benchmark-image-name}.DR-D470203-050=disable
+       -DimageDesignRule.config.${common.pg-benchmark-image-name}.DR-D470203-041=disable
+    - task: check-eric-pgbm-results
+      docker-image: adp-image-dr-check
+      docker-in-docker: socket
+      cmd: image-dr-check -i ${var.results-image-path}:${var.version}
+       --output .bob/image-drs/check-eric-pgbm-results/
+       -DimageDesignRule.config.${common.results-image-name}.DR-D470203-050=disable
+       -DimageDesignRule.config.${common.results-image-name}.DR-D470203-041=disable
+    - task: check-eric-cniv-init-wait
+      docker-image: adp-image-dr-check
+      docker-in-docker: socket
+      cmd: image-dr-check -i ${var.cniv-init-image-path}:${var.version}
+       --output .bob/image-drs/check-eric-cniv-init-wait/
+       -DimageDesignRule.config.${common.eric-cniv-init-wait-image-name}.DR-D470203-050=disable
+       -DimageDesignRule.config.${common.eric-cniv-init-wait-image-name}.DR-D470203-041=disable
+
+  pycodestyle:
+    - task: pycodestyle
+      docker-image: pgbm-ci-py37
+      cmd:
+        - pycodestyle $(find ${var.work-dir} -iname "*.py" -not -path "*/*bob-build-root*/*")
+           --ignore=W605 --count --show-source  | tee ./pycodestyle.log
+
+  pylint:
+    - task: mkdir
+      cmd:
+        - mkdir ${var.work-dir}/pylint
+    - task: version
+      docker-image: pgbm-ci-py37
+      cmd:
+        - pylint --version
+    - task: pylint
+      docker-image: pgbm-ci-py37
+      cmd:
+        - pylint --fail-under=10 $(find ${var.work-dir} -iname "*.py" ! -path "*/*bob-build-root*/*" )
+          --persistent=n --output=${var.work-dir}/pylint/pylint_results.log
+
+  lint-helm:
+    - task: helm-lint
+      docker-image: adp-release-auto
+      cmd: helm lint chart/${common.helm-chart-name} | tee ./helmlint.log
+
+  helm-design-rule-checker:
+    - task: check-helm-chart
+      docker-image: adp-helm-dr-checker
+      cmd: helm-dr-check
+            -DhelmDesignRule.config.DR-D1120-080=disable
+            -DhelmDesignRule.config.DR-D1120-061=disable
+            -DhelmDesignRule.config.DR-D1121-065=disable
+            -DhelmDesignRule.config.DR-D1121-106=disable
+            -DhelmDesignRule.config.DR-D1123-133=disable
+            -DhelmDesignRule.feature.dependency=0
+            -DhelmDesignRule.setValue.eric-data-document-database-pg="nameOverride=eric-data-document-database-pg"
+            --helm-chart chart/${common.helm-chart-name}
+            --helm-v3
+            --output .bob/
+
+  lint-helm-artefact:
+    - task: helm-lint
+      docker-image: adp-release-auto
+      cmd: helm lint .bob/${common.helm-chart-name}-${var.version}.tgz | tee ./helmlint-artefact.log
+
+  lint-dockerfile:
+    - task: dockerfile-lint
+      cmd:
+        - docker run --workdir ${var.work-dir} --rm -i hadolint/hadolint <  ${var.work-dir}/eric-pgbm-results/Dockerfile | tee ./dockerfilelint.log
+        - docker run --workdir ${var.work-dir} --rm -i hadolint/hadolint < ${var.work-dir}/eric-pgbm-benchmark/Dockerfile | tee -a ./dockerfilelint.log
+        - docker run --workdir ${var.work-dir} --rm -i hadolint/hadolint < ${var.work-dir}/eric-pgbm-base-image/Dockerfile | tee -a ./dockerfilelint.log
+        - docker run --workdir ${var.work-dir} --rm -i hadolint/hadolint < ${var.work-dir}/eric-cniv-init-wait/Dockerfile | tee -a ./dockerfilelint.log
+
+  helm-dep-up:
+    - task: helm-dep-up
+      docker-flags:
+        - "--env ENABLE_HELM_V3=${env.ENABLE_HELM_V3}"
+      docker-image: adp-release-auto
+      cmd: helm dep up ${var.work-dir}/chart/${common.helm-chart-name}
+
+  build-helm:
+    - task: helm-package
+      docker-image: adp-release-auto
+      cmd: helm-package --folder chart/${common.helm-chart-name} --version ${var.version} --replace VERSION=${var.version} --replace REPOPATH=${var.image-repo} --replace 'eric-product-info.yaml:VERSION=${var.version}' --replace 'Chart.yaml:1.1.0=${var.version}'
+
+  push-helm:
+    - task: helm-push
+      docker-image: adp-release-auto
+      cmd: upload_file.sh --filename=.bob/${common.helm-chart-name}-${var.version}.tgz --repository=${var.helm-chart-repo} --api-token=${env.HELM_REPO_TOKEN}
+
+  unit-tests:
+    - task: test-benchmark
+      docker-image: pgbm-ci-py37
+      docker-flags:
+        - "--workdir ${var.work-dir}/eric-pgbm-benchmark/src/main/python/tests"
+        - "--env PYTHONPATH=${var.work-dir}/eric-pgbm-benchmark/src/main/python"
+      cmd:
+        - pytest --cov=${var.work-dir}/eric-pgbm-benchmark/src/main/python
+    - task: test-results
+      docker-image: pgbm-ci-py311
+      docker-flags:
+        - "--workdir ${var.work-dir}/eric-pgbm-results/src/main/python/tests"
+        - "--env PYTHONPATH=${var.work-dir}/eric-pgbm-results/src/main/python"
+      cmd:
+        - pytest --cov=${var.work-dir}/eric-pgbm-results/src/main/python
+
+  anchore-grype-scan:
+    - task: anchore-grype-scan
+      docker-image: grype-scan
+      docker-in-docker: socket
+      cmd: grype_scan
+        --image ${var.image-path}:${var.version}
+        --image ${var.results-image-path}:${var.version}
+        --image ${var.cniv-init-image-path}:${var.version}
+        --report-dir build/va-reports/anchore-reports
+
+  trivy-inline-scan:
+    - task: make directory
+      cmd:
+        - mkdir -p build/va-reports/trivy-reports
+    - task: trivy-inline-scan-console-report
+      docker-image: trivy-inline-scan
+      docker-in-docker: socket
+      cmd:
+      - ${var.image-path}:${var.version}
+      - ${var.results-image-path}:${var.version}
+      - ${var.cniv-init-image-path}:${var.version}
+    - task: trivy-inline-scan-json-report
+      docker-image: trivy-inline-scan
+      docker-in-docker: socket
+      cmd:
+      - --format json --output build/va-reports/trivy-reports/trivy.report.json ${var.image-path}:${var.version}
+      - --format json --output build/va-reports/trivy-reports/trivy.report.json ${var.results-image-path}:${var.version}
+      - --format json --output build/va-reports/trivy-reports/trivy.report.json ${var.cniv-init-image-path}:${var.version}
+
+  kube-audit:
+    - task: helm-template
+      docker-image: adp-release-auto
+      cmd: "helm template ${var.work-dir}/chart/${common.helm-chart-name} --output-dir=.bob/helm_src"
+    - task: kube-audit-test
+      docker-image: va-scan-kubeaudit
+      docker-flags:
+        - "--workdir /opt/va-scan-kubeaudit/"
+        - "-v ${var.work-dir}/build/va-reports/kube-audit-report/:/tmp/reports"
+        - "-v ${var.work-dir}/.bob/helm_src:/tmp/src"
+      cmd: " "
+
+  kubesec-scan:
+    - task: kubesec-scan-test
+      docker-image: va-scan-kubesec
+      docker-flags:
+        - "--workdir /opt/va-scan-kubesec/"
+        - "-v ${var.work-dir}/config:/opt/va-scan-kubesec/conf"
+        - "-v ${var.work-dir}/build/va-reports/kubesec-reports/:/tmp/reports"
+        - "-v ${var.work-dir}/.bob/helm_src:/tmp/src"
+      cmd: " "
+
+  fetch-xray-report:
+    - task: fetch-xray-report
+      docker-image: adp-release-auto
+      cmd: bash -c 'fetch-xray
+        --config ${env.PWD}/xray_report.yaml
+        --debug
+        --user ${env.HELM_REPO_USER}
+        --apikey ${env.HELM_REPO_TOKEN}
+        --output ${var.work-dir}/build/va-reports/xray-reports/xray_report.json
+        --set version=${var.version}
+        --set pg-benchmark-image-name=${common.pg-benchmark-image-name}
+        --set results-image-name=${common.results-image-name}
+        --set eric-cniv-init-wait-image-name=${common.eric-cniv-init-wait-image-name}
+        --raw-output ${var.work-dir}/build/va-reports/xray-reports/raw_xray_report.json'
+
+  generate-VA-report-V2:
+    - task: generate-VA-report-V2
+      docker-image: adp-release-auto
+      cmd: bash -c 'va-report
+        --md
+        --output ./Vulnerability_Report_2.0.md
+        --config ${env.PWD}/va_report_config.yaml
+        ${var.va-report-arguments}'

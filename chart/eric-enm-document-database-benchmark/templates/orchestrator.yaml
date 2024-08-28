@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "eric-enm-document-database-benchmark.name" . }}
+  labels:
+    {{- include "eric-enm-document-database-benchmark.orchestrator.labels" . | nindent 4 }}
+  annotations:
+  {{- include "eric-enm-document-database-benchmark.product.annotations" . | nindent 4}}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "eric-enm-document-database-benchmark.orchestrator.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "eric-enm-document-database-benchmark.name" . }}-sa
+      volumes:
+      - name: threshold-config
+        configMap:
+          name: {{ include "eric-enm-document-database-benchmark.name" . }}-threshold-config
+      imagePullSecrets:
+        - name: {{ include "eric-enm-document-database-benchmark.pullSecret" . }}
+      {{- with .Values.tolerations.orchestrator }}
+      tolerations:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - command: ["python3.11", "/python/scripts/result_service.py"]
+        image: {{ include "eric-enm-document-database-benchmark.results.imageName" . }}
+        imagePullPolicy: {{ include "eric-enm-document-database-benchmark.orchestrator.pullPolicy" . }}
+        name: pgbm-orchestrator
+        resources:
+          limits:
+            cpu: {{ .Values.resources.results.limits.cpu  }}
+            memory: {{ .Values.resources.results.limits.memory  }}
+          requests:
+            cpu: {{ .Values.resources.results.requests.cpu   }}
+            memory: {{ .Values.resources.results.requests.memory }}
+        env:
+        - name: PM_HOSTNAME
+          value: {{ .Values.prometheus.hostname }}
+        - name: BENCHMARK_JOB_NAME
+          value: {{ include "eric-enm-document-database-benchmark.name" . }}-load-tester
+        - name: AGENT_ENABLED
+          value: {{ include "eric-enm-document-database-benchmark.cnivAgent.enabled" . | quote }}
+        - name: AGENT_HOSTNAME
+          value: {{ include "eric-enm-document-database-benchmark.cnivAgent.name" . }}
+        - name: AGENT_PORT
+          value: {{ include "eric-enm-document-database-benchmark.cnivAgent.port" . | quote }}
+        - name: BENCH_NAME
+          value: {{ $.Chart.Name }}
+        - name: BENCH_GROUP
+          value: {{ include "eric-enm-document-database-benchmark.labels.benchmarkGroup" . }}
+        - name: LOGLEVEL
+          value: {{ .Values.logging.level | quote }}
+        volumeMounts:
+        - name: threshold-config
+          mountPath: /thresholds
+        securityContext:
+{{- include "eric-enm-document-database-benchmark.securityContext" . | nindent 10 }}
+      initContainers:
+      {{- if eq (include "eric-enm-document-database-benchmark.cnivAgent.enabled" . ) "true" }}
+      - name: eric-cniv-init-wait
+        image: {{ include "eric-enm-document-database-benchmark.eric-cniv-init-wait.imageName" . }}
+        imagePullPolicy: {{ include "eric-enm-document-database-benchmark.init-wait.pullPolicy" . }}
+        command: ['/bin/sh', '/wait_for_agent.sh']
+        env:
+        - name: AGENT_HOSTNAME
+          value: {{ include "eric-enm-document-database-benchmark.cnivAgent.name" . }}
+        - name: AGENT_PORT
+          value: {{ include "eric-enm-document-database-benchmark.cnivAgent.port" . | quote }}
+        - name: BENCH_NAME
+          value: {{ $.Chart.Name }}
+        - name: BENCH_GROUP
+          value: {{ include "eric-enm-document-database-benchmark.labels.benchmarkGroup" . }}
+        securityContext:
+{{- include "eric-enm-document-database-benchmark.securityContext" . | nindent 10 }}
+      {{- end }}
+      - name: init-check-connectivity
+        image: {{ include "eric-enm-document-database-benchmark.pgbench.imageName" .  }}
+        imagePullPolicy: {{ include "eric-enm-document-database-benchmark.benchmark.pullPolicy" .  }}
+        command: ['/bin/sh', '/var/tmp/check-pg-availability.sh']
+        securityContext:
+{{- include "eric-enm-document-database-benchmark.securityContext" . | nindent 10 }}
+      restartPolicy: Never

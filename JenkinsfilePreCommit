@@ -1,0 +1,285 @@
+#!/usr/bin/env groovy
+
+/* IMPORTANT:
+ *
+ * In order to make this pipeline work, the following configuration on Jenkins is required:
+ * - slave with a specific label (see pipeline.agent.label below)
+ * - credentials plugin should be installed and have the secrets with the following names:
+ *   + lciadm100credentials (token to access Artifactory)
+ */
+
+def bob = new BobCommand()
+        .needDockerSocket(true)
+        .toString()
+def failedStage = ''
+pipeline {
+    agent {
+        label 'Cloud-Native'
+    }
+    stages {
+        stage('Clean') {
+            steps {
+                sh("${bob} clean")
+            }
+        }
+        stage('Set current working directory') {
+            steps {
+                script {
+                    sh "${bob} set-working-directory"
+                }
+            }
+        }
+        stage('Inject Credential Files') {
+            steps {
+                withCredentials([file(credentialsId: 'lciadm100-docker-auth', variable: 'dockerConfig')]) {
+                    sh "install -m 600 ${dockerConfig} ${HOME}/.docker/config.json"
+                }
+            }
+        }
+        stage('Checkout Cloud-Native SG Git Repository') {
+            steps {
+                script {
+                    if (env.GERRIT_CHANGE_NUMBER) {
+                        checkout changelog: true, \
+                        scm: [$class: 'GitSCM', \
+                        branches: [[name: "$GERRIT_REFSPEC"]], \
+                        doGenerateSubmoduleConfigurations: false, \
+                        extensions: [[$class: 'BuildChooserSetting', buildChooser: [$class: 'GerritTriggerBuildChooser']]], \
+                        submoduleCfg: [], \
+                        userRemoteConfigs: [[refspec: "${GERRIT_REFSPEC}", \
+                        url: "${GERRIT_MIRROR}/${GERRIT_PROJECT}"]]]
+                    } else {
+                        println "No GERRIT_CHANGE_NUMBER"
+                        git changelog: true, poll: false, url: '${GERRIT_MIRROR}/${REPO}'
+                    }
+                }
+            }
+        }
+        stage('Python Lint') {
+            steps {
+                sh("${bob} pycodestyle")
+                sh("${bob} pylint")
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Helm Design Rule Checks') {
+            steps {
+                sh "${bob} helm-design-rule-checker"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Helm Dep Up') {
+            steps {
+                sh "${bob} helm-dep-up"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Helm Lint') {
+            steps {
+                sh "${bob} lint-helm"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Linting Dockerfile') {
+            steps {
+                sh "${bob} lint-dockerfile"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Unit Tests') {
+            steps {
+                sh "${bob} unit-tests"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Build & Push Docker Images') {
+            steps {
+                sh "${bob} get-commit-hash"
+                sh "${bob} prepare-snapshot-build"
+                sh "${bob} prepare-docker-image-paths"
+                sh "${bob} build-and-push-base-image"
+                sh "${bob} build-and-push-images"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Docker Image Design Rule Checks') {
+            steps {
+                parallel(
+                    "check-eric-pgbm-benchmark": {
+                        sh "${bob} image-design-rule-checks:check-eric-pgbm-benchmark || true"
+                    },
+                    "check-eric-pgbm-results": {
+                        sh "${bob} image-design-rule-checks:check-eric-pgbm-results || true"
+                    },
+                    "check-eric-cniv-init-wait": {
+                        sh "${bob} image-design-rule-checks:check-eric-cniv-init-wait || true"
+                    },
+                    "check-eric-pgbm-base-image": {
+                        sh "${bob} image-design-rule-checks:check-eric-pgbm-base-image || true"
+                    }
+                )
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage('Build & Push Helm Chart') {
+            steps {
+                sh "${bob} build-helm"
+                sh "${bob} push-helm"
+            }
+            post {
+                failure {
+                    script {
+                        failedStage = env.STAGE_NAME
+                    }
+                }
+            }
+        }
+        stage("Vulnerability Analysis"){
+            steps{
+                parallel(
+                    "Kubeaudit": {
+                        script {
+                            sh "${bob} kube-audit"
+                            sh "echo -n ' --kubeaudit-reports build/va-reports/kube-audit-report' >>.bob/var.va-report-arguments"
+                        }
+                    },
+                    "Kubsec": {
+                        script {
+                            sh "mkdir config && touch config/kubesec_config.yaml"
+                            sh 'FILE=jenkins/cnivFiles/va/kubesec_config.yaml && git archive --remote=${GERRIT_MIRROR}/OSS/ENM-Parent/SQ-Gate/com.ericsson.oss.containerisation/cniv-ci-pipeline HEAD "$FILE" | tar -xO "$FILE" >  config/kubesec_config.yaml'
+                            sh "${bob} kubesec-scan"
+                            sh "echo -n ' --kubesec-reports build/va-reports/kubesec-reports' >>.bob/var.va-report-arguments"
+                        }
+                    },
+                    "Trivy": {
+                        script {
+                            sh "${bob} trivy-inline-scan"
+                            sh "echo -n ' --trivy-reports build/va-reports/trivy-reports' >>.bob/var.va-report-arguments"
+                        }
+                    },
+                    "Anchore-Grype": {
+                        script {
+                            sh "${bob} anchore-grype-scan"
+                            sh "echo -n ' --anchore-reports build/va-reports/anchore-reports' >>.bob/var.va-report-arguments"
+                        }
+                    }
+                )
+            }
+        }
+        stage('Overall VA Report') {
+            steps {
+                script {
+                    sh "${bob} generate-VA-report-V2 || true"
+                }
+            }
+        }
+    }
+    post {
+        always{
+            archiveArtifacts 'pycodestyle.log, pylint/pylint_results.log'
+            archiveArtifacts 'dockerfilelint.log'
+            archiveArtifacts 'helmlint.log'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '.bob/design-rule-check-report.*'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '.bob/image-drs/check-eric-pgbm-benchmark/*'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '.bob/image-drs/check-eric-pgbm-results/*'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '.bob/image-drs/check-eric-cniv-init-wait/*'
+            archiveArtifacts allowEmptyArchive: true, artifacts: '.bob/image-drs/check-eric-pgbm-base-image/*'
+            archiveArtifacts artifacts: 'Vulnerability_Report_2.0.md', allowEmptyArchive: true
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'build/va-reports/trivy-reports/**.*,  trivy_metadata.properties,' +
+                    ' build/va-reports/kube-audit-report/**/*, build/va-reports/kubesec-reports/*, build/va-reports/anchore-reports/**.*'
+        }
+        failure {
+            sh '''
+                set +x
+             '''
+        }
+    }
+}
+
+// More about @Builder: http://mrhaki.blogspot.com/2014/05/groovy-goodness-use-builder-ast.html
+import groovy.transform.builder.Builder
+import groovy.transform.builder.SimpleStrategy
+
+@Builder(builderStrategy = SimpleStrategy, prefix = '')
+class BobCommand {
+    def bobImage = 'armdocker.rnd.ericsson.se/sandbox/adp-staging/adp-cicd/bob.2.0:latest'
+    def envVars = [:]
+    def needDockerSocket = false
+    def rulesetFile = 'ruleset2.0.yaml'
+    String toString() {
+        def env = envVars
+                .collect({ entry -> "-e ${entry.key}=\"${entry.value}\"" })
+                .join(' ')
+
+        def cmd = """\
+            |docker run
+            |--init
+            |--rm
+            |--workdir \${PWD}
+            |--user \$(id -u):\$(id -g)
+            |-v \${PWD}:\${PWD}
+            |-v /etc/group:/etc/group:ro
+            |-v /etc/passwd:/etc/passwd:ro
+            |-v \${HOME}/.m2:\${HOME}/.m2
+            |-v \${HOME}/.docker:\${HOME}/.docker
+            |${needDockerSocket ? '-v /var/run/docker.sock:/var/run/docker.sock' : ''}
+            |${env}
+            |\$(for group in \$(id -G); do printf ' --group-add %s' "\$group"; done)
+            |--group-add \$(stat -c '%g' /var/run/docker.sock)
+            |${bobImage}
+            |-r ${rulesetFile}
+            |"""
+        return cmd
+                .stripMargin()           // remove indentation
+                .replace('\n', ' ')      // join lines
+                .replaceAll(/[ ]+/, ' ') // replace multiple spaces by one
+    }
+}

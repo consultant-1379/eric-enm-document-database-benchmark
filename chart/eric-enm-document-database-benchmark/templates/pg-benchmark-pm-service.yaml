@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eric-enm-document-database-benchmark.name" . }}-pm-service
+  labels:
+    {{- include "eric-enm-document-database-benchmark.common.labels" . | nindent 4 }}
+  annotations:
+  {{- include "eric-enm-document-database-benchmark.prometheus.annotations" . | nindent 4}}
+  {{- include "eric-enm-document-database-benchmark.product.annotations" . | nindent 4}}
+spec:
+  {{- include "eric-enm-document-database-benchmark.internalIPFamily" . | nindent 2 }}
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: {{ include "eric-enm-document-database-benchmark.name" . }}-load-tester
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: {{ include "eric-enm-document-database-benchmark.prometheus.port" .}}
+      targetPort: {{ include "eric-enm-document-database-benchmark.prometheus.port" .}}

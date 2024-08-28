@@ -1,0 +1,12 @@
+{
+    "report":[
+        {
+            "name": "tx_per_second",
+            "achievedResult": "7000.0",
+            "expectedResult": "minimum: 8000",
+            "status": "FAIL",
+            "subRowDesc": "Transactions per second including the time taken in order to establish connections"
+        }
+    ],
+    "description": "Postgres Benchmark Report"
+}

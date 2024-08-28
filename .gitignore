@@ -1,0 +1,10 @@
+*.pyc
+*/__pycache__/*
+__pycache__/
+*.pytest_cache
+.bob
+
+# IDEs
+.idea
+*.iml
+.idea/deployment.xml

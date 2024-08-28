@@ -1,0 +1,38 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "test_metric",
+                    "app": "postgres",
+                    "endpoint": "metrics",
+                    "instance": "192.168.165.221:9187",
+                    "job": "postgres",
+                    "namespace": "test_namespace",
+                    "service": "postgres"
+                },
+                "value": [
+                    1663065619.991,
+                    "4"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "test_metric",
+                    "app": "postgres",
+                    "endpoint": "metrics",
+                    "instance": "192.168.235.134:9187",
+                    "job": "postgres-replica",
+                    "namespace": "test_namespace",
+                    "service": "postgres-replica"
+                },
+                "value": [
+                    1663065619.991,
+                    "0"
+                ]
+            }
+        ]
+    }
+}

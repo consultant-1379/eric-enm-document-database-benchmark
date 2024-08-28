@@ -1,0 +1,227 @@
+global:
+  registry:
+    imagePullPolicy: IfNotPresent
+    url: armdocker.rnd.ericsson.se
+  internalIPFamily:
+
+# Placeholder figures are used for time being
+requirements:
+  tx_per_second:
+    requirements:
+      expectedResult:
+        minimum: 171
+
+  tx_latency:
+    requirements:
+      expectedResult:
+        maximum: 578
+
+  cpu_usage:
+    requirements:
+      expectedResult:
+        maximum: 90
+
+  memory_usage:
+    requirements:
+      expectedResult:
+        maximum: 3000
+
+  cpu_throttling:
+    requirements:
+      expectedResult:
+        maximum: 100
+
+  connections:
+    requirements:
+      expectedResult:
+        maximum: 1000
+
+  replication_lag:
+    requirements:
+      expectedResult:
+        maximum: 10000
+
+  replication_slots_active:
+    requirements:
+      expectedResult:
+        minimum: 1
+
+  fs_volume_usage:
+    requirements:
+      expectedResult:
+        maximum: 1000
+
+extraLarge:
+  pgbench:
+    clients: 80
+    time: 900
+    threads: 6
+    scale_factor: 80
+    weight: 0
+    filename: custom-xl.sql
+    rate: --rate=165
+  parallelExecutions: 6
+
+small:
+  pgbench:
+    clients: 100
+    time: 900
+    threads: 2
+    scale_factor: 300
+    weight: 1
+    filename: custom-5k.sql
+    rate: ''
+  parallelExecutions: 1
+
+environmentType: small
+
+logging:
+  level: "INFO"
+
+resources:
+  pgbenchmark:
+    limits:
+      cpu: "2"
+      memory: "1000Mi"
+    requests:
+      cpu: 2000m
+      memory: "1000Mi"
+  results:
+    limits:
+      cpu: 500m
+      memory: "100Mi"
+    requests:
+      cpu: 500m
+      memory: "100Mi"
+
+postgresCredentials:
+  superPwd:
+  customUser:
+  customPwd:
+
+tolerations:
+  orchestrator: []
+  benchmark: []
+
+imageCredentials:
+  pullSecret:
+  orchestrator:
+    registry:
+      imagePullPolicy:
+      url:
+  benchmark:
+    registry:
+      imagePullPolicy:
+      url:
+  init_wait:
+    registry:
+      imagePullPolicy:
+      url:
+
+image:
+  pullPolicy: IfNotPresent
+  repoPath: REPOPATH
+  pgbm:
+    tag: VERSION
+  results:
+    tag: VERSION
+  initWaitPGBM:
+    tag: VERSION
+  initWaitCNIV:
+    tag: VERSION
+
+prometheus:
+  hostname: "eric-pm-server:9090"
+
+eric-data-document-database-pg:
+  enabled: true
+  nameOverride: postgres
+  resources:
+    postgres:
+      requests:
+        memory: "4000Mi"
+        cpu: "2000m"
+      limits:
+        memory: "4000Mi"
+        cpu: "2000m"
+    bra:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+        ephemeral-storage: "10Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+        ephemeral-storage: "18Gi"
+    logshipper:
+      requests:
+        memory: "100Mi"
+        cpu: "100m"
+      limits:
+        memory: "200Mi"
+        cpu: "200m"
+  brAgent:
+    enabled: false
+    backupTypeList:
+      - ROLLBACK
+  persistentVolumeClaim:
+    size: "25Gi"
+  credentials:
+    kubernetesSecretName: eric-enm-document-database-benchmark-ddbpg-secret
+  postgresConfig:
+    autovacuum: "on"
+    autovacuum_analyze_threshold: 2000
+    autovacuum_max_workers: 6
+    autovacuum_naptime: "2min"
+    autovacuum_vacuum_threshold: 4000
+    max_wal_size: "1GB"
+    min_wal_size: "80MB"
+    max_slot_wal_keep_size: "5000"
+    client_min_messages: WARNING
+    effective_cache_size: "3275MB"
+    log_autovacuum_min_duration: 1000
+    log_connections: "off"
+    log_disconnections: "off"
+    log_duration: "off"
+    log_hostname: "off"
+    log_line_prefix: "pg_log-%m,db=%d,user=%u,%i"
+    log_min_error_statement: WARNING
+    log_min_messages: WARNING
+    log_rotation_age: 10080
+    log_rotation_size: 102400
+    log_truncate_on_rotation: "on"
+    maintenance_work_mem: "128MB"
+    max_connections: 1000
+    max_prepared_transactions: 500
+    max_stack_depth: "4MB"
+    shared_buffers: "2048MB"
+    temp_buffers: "64MB"
+    work_mem: "64MB"
+    logging_collector: "off"
+    log_destination: stderr
+    tcp_keepalives_interval: 0
+    tcp_keepalives_idle: 0
+    tcp_keepalives_count: 0
+  security:
+    postgres:
+      tls:
+        enable: false
+    tls:
+      brAgent:
+        enabled: false
+  global:
+    security:
+      tls:
+        enabled: false
+  affinity:
+    podAntiAffinity: hard
+  podDisruptionBudget:
+    maxUnavailable: 1
+  terminationGracePeriodSeconds:
+    postgres: 100
+  log:
+    logshipper:
+      level: info
+    outputs:
+      - stdout
+  targetPGversion: "13"

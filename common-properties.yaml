@@ -1,0 +1,16 @@
+modelVersion: 2.0
+
+properties:
+  - registry-url: armdocker.rnd.ericsson.se
+  - image-repo: proj-enm
+  - internal-image-repo: proj_oss_releases/enm
+  - helm-chart-name: eric-enm-document-database-benchmark
+  - helm-chart-release-repo: https://arm.epk.ericsson.se/artifactory/proj-enm-helm/eric-enm-document-database-benchmark/
+  - helm-chart-snapshot-repo: https://arm.epk.ericsson.se/artifactory/proj-enm-dev-internal-helm/eric-enm-document-database-benchmark/
+
+  - pg-benchmark-image-name: eric-enm-document-database-benchmark-load-tester
+  - base-image-name: eric-enm-document-database-benchmark-base-image
+  - results-image-name: eric-enm-document-database-benchmark-orchestrator
+  - eric-cniv-init-wait-image-name: eric-cniv-init-wait
+
+  - cbos-version: 6.16.0-13

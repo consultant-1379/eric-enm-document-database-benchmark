@@ -1,0 +1,120 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "vector",
+        "result": [
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.186.102:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-hcq7c",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "10"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.186.110:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-sxpm7",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "10"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.186.127:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-wrrt5",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "20"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.186.66:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-bfhtb",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "5"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.248.163:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-qnlxb",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "7"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.248.165:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-gn4tc",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "8"
+                ]
+            },
+            {
+                "metric": {
+                    "__name__": "pgb_transaction_latency",
+                    "app": "pg-benchmark",
+                    "endpoint": "metrics",
+                    "instance": "192.168.36.251:9600",
+                    "job": "pg-benchmark",
+                    "namespace": "enm11a21",
+                    "pod": "pg-benchmark-qbgxr",
+                    "service": "pg-benchmark"
+                },
+                "value": [
+                    1663777185.903,
+                    "10"
+                ]
+            }
+        ]
+    }
+}

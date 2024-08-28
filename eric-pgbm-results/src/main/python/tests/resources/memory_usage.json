@@ -1,0 +1,136 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "matrix",
+    "result": [
+      {
+        "metric": {
+          "__name__": "container_memory_rss",
+          "container": "postgres",
+          "endpoint": "https-metrics",
+          "image": "ieatjfrepo1.athtem.eei.ericsson.se/hub/proj-document-database-pg-release/data/eric-data-document-database-pg13:7.7.0-27",
+          "instance": "10.0.10.155:10250",
+          "job": "kubelet-cadvisor",
+          "metrics_path": "/metrics/cadvisor",
+          "name": "84ebeac3e999c085d35aec0e7aafe2713eb15f342e3ea4c285fd91f238f5f237",
+          "namespace": "enm11a21",
+          "node": "worker-application-v6xirtd3-ccd-c11a021",
+          "pod": "postgres-1",
+          "service": "eric-enm-kubelet"
+        },
+        "values": [
+          [
+            1668523174.31,
+            "64823296"
+          ],
+          [
+            1668523234.31,
+            "65052672"
+          ],
+          [
+            1668523294.31,
+            "64614400"
+          ],
+          [
+            1668523354.31,
+            "65015808"
+          ],
+          [
+            1668523414.31,
+            "64778240"
+          ],
+          [
+            1668523474.31,
+            "64716800"
+          ],
+          [
+            1668523534.31,
+            "64716800"
+          ],
+          [
+            1668523594.31,
+            "64716800"
+          ],
+          [
+            1668523654.31,
+            "64716800"
+          ],
+          [
+            1668523714.31,
+            "64716800"
+          ]
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "container_memory_rss",
+          "container": "postgres",
+          "endpoint": "https-metrics",
+          "image": "ieatjfrepo1.athtem.eei.ericsson.se/hub/proj-document-database-pg-release/data/eric-data-document-database-pg13:7.7.0-27",
+          "instance": "10.0.10.230:10250",
+          "job": "kubelet-cadvisor",
+          "metrics_path": "/metrics/cadvisor",
+          "name": "8cfd560672a40bc8b33686311a1fdb8726959301cabcac80982467e76bce1377",
+          "namespace": "enm11a21",
+          "node": "worker-application-zt933x9x-ccd-c11a021",
+          "pod": "postgres-0",
+          "service": "eric-enm-kubelet"
+        },
+        "values": [
+          [
+            1668523174.31,
+            "240771072"
+          ],
+          [
+            1668523234.31,
+            "240259072"
+          ],
+          [
+            1668523294.31,
+            "235270144"
+          ],
+          [
+            1668523354.31,
+            "239484928"
+          ],
+          [
+            1668523414.31,
+            "232706048"
+          ],
+          [
+            1668523474.31,
+            "260000000"
+          ],
+          [
+            1668523534.31,
+            "241942528"
+          ],
+          [
+            1668523594.31,
+            "239833088"
+          ],
+          [
+            1668523654.31,
+            "237133824"
+          ],
+          [
+            1668523714.31,
+            "237133824"
+          ],
+          [
+            1668523774.31,
+            "237133824"
+          ],
+          [
+            1668523834.31,
+            "237133824"
+          ],
+          [
+            1668523894.31,
+            "237133824"
+          ]
+        ]
+      }
+    ]
+  }
+}
